@@ -570,6 +570,18 @@ const workflowDefinitions = [
   },
 ];
 
+const STORAGE_KEY = "cashAppWorkflowTool.v2.data";
+
+const defaultWorkflowData = cloneData({
+  articles,
+  quickTexts: quickTextLibrary,
+  sharedVerificationSteps,
+  terminalSteps,
+  workflows: workflowDefinitions,
+});
+
+applyWorkflowData(loadWorkflowData());
+
 const workflowSelect = document.querySelector("#workflowSelect");
 const loadWorkflowButton = document.querySelector("#loadWorkflow");
 const resetWorkflowButton = document.querySelector("#resetWorkflow");
@@ -578,13 +590,82 @@ const decisionOptions = document.querySelector("#decisionOptions");
 const progressTrack = document.querySelector("#progressTrack");
 const knowledgeGrid = document.querySelector("#knowledgeGrid");
 const knowledgeSearch = document.querySelector("#knowledgeSearch");
+const adminWorkflowList = document.querySelector("#adminWorkflowList");
+const adminSteps = document.querySelector("#adminSteps");
+const adminStatus = document.querySelector("#adminStatus");
 
 let currentWorkflow = workflowDefinitions[0];
 let currentStepKey = 0;
 let historyStack = [];
+let adminSelectedWorkflowId = workflowDefinitions[0]?.id || "";
 
 function unique(items) {
   return [...new Set(items.filter(Boolean))];
+}
+
+function loadWorkflowData() {
+  const externalData = normalizeWorkflowData(window.WORKFLOW_DATA || {});
+  const baseData = hasWorkflowPayload(externalData) ? externalData : cloneData(defaultWorkflowData);
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return baseData;
+    const parsed = normalizeWorkflowData(JSON.parse(saved));
+    return hasWorkflowPayload(parsed) ? parsed : baseData;
+  } catch {
+    return baseData;
+  }
+}
+
+function normalizeWorkflowData(data) {
+  return {
+    articles: Array.isArray(data.articles) ? data.articles : cloneData(defaultWorkflowData.articles),
+    quickTexts: Array.isArray(data.quickTexts) ? data.quickTexts : cloneData(defaultWorkflowData.quickTexts),
+    sharedVerificationSteps: Array.isArray(data.sharedVerificationSteps)
+      ? data.sharedVerificationSteps
+      : cloneData(defaultWorkflowData.sharedVerificationSteps),
+    terminalSteps: data.terminalSteps && typeof data.terminalSteps === "object" ? data.terminalSteps : cloneData(defaultWorkflowData.terminalSteps),
+    workflows: Array.isArray(data.workflows) ? data.workflows : cloneData(defaultWorkflowData.workflows),
+  };
+}
+
+function hasWorkflowPayload(data) {
+  return Array.isArray(data.workflows) && data.workflows.length > 0;
+}
+
+function applyWorkflowData(data) {
+  replaceArray(articles, data.articles);
+  replaceArray(quickTextLibrary, data.quickTexts);
+  replaceArray(sharedVerificationSteps, data.sharedVerificationSteps);
+  replaceObject(terminalSteps, data.terminalSteps);
+  replaceArray(workflowDefinitions, data.workflows);
+}
+
+function getCurrentWorkflowData() {
+  return cloneData({
+    schemaVersion: 1,
+    articles,
+    quickTexts: quickTextLibrary,
+    sharedVerificationSteps,
+    terminalSteps,
+    workflows: workflowDefinitions,
+  });
+}
+
+function saveWorkflowData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(getCurrentWorkflowData(), null, 2));
+}
+
+function replaceArray(target, source) {
+  target.splice(0, target.length, ...cloneData(source || []));
+}
+
+function replaceObject(target, source) {
+  Object.keys(target).forEach((key) => delete target[key]);
+  Object.assign(target, cloneData(source || {}));
+}
+
+function cloneData(value) {
+  return JSON.parse(JSON.stringify(value));
 }
 
 function getCurrentStep() {
@@ -764,17 +845,295 @@ function renderKnowledge(filter = "") {
     });
 }
 
-function init() {
+function refreshWorkflowSelect(selectedId = currentWorkflow?.id) {
+  workflowSelect.innerHTML = "";
   workflowDefinitions.forEach((workflow) => {
     const option = document.createElement("option");
     option.value = workflow.id;
     option.textContent = workflow.title;
     workflowSelect.appendChild(option);
   });
+  if (selectedId && workflowDefinitions.some((workflow) => workflow.id === selectedId)) {
+    workflowSelect.value = selectedId;
+  }
+}
 
+function refreshSummaryMetrics() {
   document.querySelector("#workflowCount").textContent = workflowDefinitions.length;
   document.querySelector("#articleCount").textContent = articles.length;
-  document.querySelector("#toolCount").textContent = unique(workflowDefinitions.flatMap((workflow) => workflow.steps.flatMap((step) => step.tools))).length;
+  document.querySelector("#toolCount").textContent = unique(workflowDefinitions.flatMap((workflow) => workflow.steps.flatMap((step) => step.tools || []))).length;
+}
+
+function renderAdminWorkflowList() {
+  adminWorkflowList.innerHTML = "";
+  workflowDefinitions.forEach((workflow) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "admin-workflow-item";
+    button.classList.toggle("active", workflow.id === adminSelectedWorkflowId);
+    button.innerHTML = `<strong>${escapeHtml(workflow.title)}</strong><span>${escapeHtml(workflow.category)} · ${workflow.steps.length} steps</span>`;
+    button.addEventListener("click", () => {
+      adminSelectedWorkflowId = workflow.id;
+      renderAdmin();
+    });
+    adminWorkflowList.appendChild(button);
+  });
+}
+
+function renderAdminEditor() {
+  const workflow = getAdminWorkflow();
+  if (!workflow) return;
+  document.querySelector("#adminWorkflowId").value = workflow.id;
+  document.querySelector("#adminWorkflowCategory").value = workflow.category || "";
+  document.querySelector("#adminWorkflowTitle").value = workflow.title || "";
+  document.querySelector("#adminWorkflowPurpose").value = workflow.purpose || "";
+  document.querySelector("#adminWorkflowArticles").value = (workflow.articleTitles || []).join("\n");
+  adminSteps.innerHTML = "";
+  workflow.steps.forEach((step, index) => adminSteps.appendChild(createAdminStepCard(step, index)));
+}
+
+function createAdminStepCard(step, index) {
+  const card = document.createElement("article");
+  card.className = "admin-step-card";
+  card.dataset.stepIndex = String(index);
+  card.innerHTML = `
+    <div class="admin-step-title">
+      <strong>Step ${index + 1}</strong>
+      <button class="danger-action" data-remove-step="${index}" type="button">Remove</button>
+    </div>
+    <div class="admin-step-grid">
+      <label>Stage <input data-step-field="stage" type="text" value="${escapeAttribute(step.stage || "")}" /></label>
+      <label>Title <input data-step-field="title" type="text" value="${escapeAttribute(step.title || "")}" /></label>
+    </div>
+    <label>Body <textarea data-step-field="body" rows="3">${escapeHtml(step.body || "")}</textarea></label>
+    <div class="admin-step-grid">
+      <label>Recommended Actions <textarea data-step-field="actions" rows="4" placeholder="One action per line">${escapeHtml((step.actions || []).join("\n"))}</textarea></label>
+      <label>Tools / Reminders <textarea data-step-field="tools" rows="4" placeholder="One tool per line">${escapeHtml((step.tools || []).join("\n"))}</textarea></label>
+    </div>
+    <div class="admin-step-grid">
+      <label>Scripts <textarea data-step-field="scripts" rows="4" placeholder="One script per line">${escapeHtml((step.scripts || []).join("\n"))}</textarea></label>
+      <label>Decision Options <textarea data-step-field="options" rows="4" placeholder="Label => next index, e.g. Verified => 1">${escapeHtml(formatOptions(step.options || []))}</textarea></label>
+    </div>
+  `;
+  card.querySelector("[data-remove-step]").addEventListener("click", () => {
+    const workflow = getAdminWorkflow();
+    if (!workflow || workflow.steps.length <= 1) {
+      setAdminStatus("A workflow needs at least one step.", "error");
+      return;
+    }
+    workflow.steps.splice(index, 1);
+    renderAdmin();
+    setAdminStatus("Step removed. Save the workflow to keep this change.", "ok");
+  });
+  return card;
+}
+
+function renderAdmin() {
+  if (!workflowDefinitions.some((workflow) => workflow.id === adminSelectedWorkflowId)) {
+    adminSelectedWorkflowId = workflowDefinitions[0]?.id || "";
+  }
+  renderAdminWorkflowList();
+  renderAdminEditor();
+}
+
+function getAdminWorkflow() {
+  return workflowDefinitions.find((workflow) => workflow.id === adminSelectedWorkflowId);
+}
+
+function saveAdminWorkflow() {
+  const original = getAdminWorkflow();
+  if (!original) return;
+  const nextWorkflow = collectAdminWorkflow();
+  if (!nextWorkflow.id || !nextWorkflow.title) {
+    setAdminStatus("Workflow ID and title are required.", "error");
+    return;
+  }
+  const duplicate = workflowDefinitions.find((workflow) => workflow.id === nextWorkflow.id && workflow !== original);
+  if (duplicate) {
+    setAdminStatus("Workflow ID must be unique.", "error");
+    return;
+  }
+  Object.assign(original, nextWorkflow);
+  adminSelectedWorkflowId = nextWorkflow.id;
+  saveWorkflowData();
+  refreshWorkflowSelect(nextWorkflow.id);
+  currentWorkflow = workflowDefinitions.find((workflow) => workflow.id === nextWorkflow.id) || workflowDefinitions[0];
+  renderStep();
+  renderKnowledge(knowledgeSearch.value);
+  refreshSummaryMetrics();
+  renderAdmin();
+  setAdminStatus("Workflow saved locally in this browser.", "ok");
+}
+
+function collectAdminWorkflow() {
+  return {
+    id: document.querySelector("#adminWorkflowId").value.trim(),
+    category: document.querySelector("#adminWorkflowCategory").value.trim(),
+    title: document.querySelector("#adminWorkflowTitle").value.trim(),
+    purpose: document.querySelector("#adminWorkflowPurpose").value.trim(),
+    articleTitles: parseLines(document.querySelector("#adminWorkflowArticles").value),
+    steps: [...adminSteps.querySelectorAll(".admin-step-card")].map((card) => ({
+      stage: card.querySelector('[data-step-field="stage"]').value.trim(),
+      title: card.querySelector('[data-step-field="title"]').value.trim(),
+      body: card.querySelector('[data-step-field="body"]').value.trim(),
+      actions: parseLines(card.querySelector('[data-step-field="actions"]').value),
+      tools: parseLines(card.querySelector('[data-step-field="tools"]').value),
+      scripts: parseLines(card.querySelector('[data-step-field="scripts"]').value),
+      options: parseOptions(card.querySelector('[data-step-field="options"]').value),
+    })),
+  };
+}
+
+function createNewWorkflow() {
+  const id = `newWorkflow${Date.now()}`;
+  workflowDefinitions.push({
+    id,
+    category: "New Category",
+    title: "New Workflow",
+    purpose: "Describe the workflow purpose.",
+    articleTitles: [],
+    steps: [createBlankStep()],
+  });
+  adminSelectedWorkflowId = id;
+  saveWorkflowData();
+  refreshWorkflowSelect(id);
+  refreshSummaryMetrics();
+  renderAdmin();
+  setAdminStatus("New workflow created. Edit the details and save.", "ok");
+}
+
+function duplicateWorkflow() {
+  const workflow = getAdminWorkflow();
+  if (!workflow) return;
+  const copy = cloneData(workflow);
+  copy.id = `${workflow.id}Copy${Date.now()}`;
+  copy.title = `${workflow.title} Copy`;
+  workflowDefinitions.push(copy);
+  adminSelectedWorkflowId = copy.id;
+  saveWorkflowData();
+  refreshWorkflowSelect(copy.id);
+  refreshSummaryMetrics();
+  renderAdmin();
+  setAdminStatus("Workflow duplicated.", "ok");
+}
+
+function deleteWorkflow() {
+  if (workflowDefinitions.length <= 1) {
+    setAdminStatus("At least one workflow is required.", "error");
+    return;
+  }
+  const index = workflowDefinitions.findIndex((workflow) => workflow.id === adminSelectedWorkflowId);
+  if (index === -1) return;
+  workflowDefinitions.splice(index, 1);
+  adminSelectedWorkflowId = workflowDefinitions[0].id;
+  currentWorkflow = workflowDefinitions[0];
+  saveWorkflowData();
+  refreshWorkflowSelect(currentWorkflow.id);
+  refreshSummaryMetrics();
+  renderStep();
+  renderAdmin();
+  setAdminStatus("Workflow deleted locally.", "ok");
+}
+
+function addAdminStep() {
+  const workflow = getAdminWorkflow();
+  if (!workflow) return;
+  workflow.steps.push(createBlankStep());
+  renderAdmin();
+  setAdminStatus("Step added. Save the workflow to keep this change.", "ok");
+}
+
+function createBlankStep() {
+  return {
+    stage: "Investigation",
+    title: "New step",
+    body: "Describe what the advocate should decide or do.",
+    actions: ["Add recommended action"],
+    tools: ["CF1 Lightning"],
+    scripts: ["Add approved script guidance"],
+    options: [],
+  };
+}
+
+function exportWorkflowData() {
+  const blob = new Blob([JSON.stringify(getCurrentWorkflowData(), null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "cash-app-workflow-data.json";
+  link.click();
+  URL.revokeObjectURL(url);
+  setAdminStatus("Workflow data exported.", "ok");
+}
+
+function importWorkflowData(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    try {
+      const data = normalizeWorkflowData(JSON.parse(String(reader.result)));
+      if (!hasWorkflowPayload(data)) throw new Error("No workflows found.");
+      applyWorkflowData(data);
+      saveWorkflowData();
+      adminSelectedWorkflowId = workflowDefinitions[0].id;
+      currentWorkflow = workflowDefinitions[0];
+      refreshWorkflowSelect(currentWorkflow.id);
+      refreshSummaryMetrics();
+      renderKnowledge(knowledgeSearch.value);
+      renderStep();
+      renderAdmin();
+      setAdminStatus("Workflow data imported and saved locally.", "ok");
+    } catch (error) {
+      setAdminStatus(`Import failed: ${error.message}`, "error");
+    }
+  });
+  reader.readAsText(file);
+}
+
+function resetAdminData() {
+  localStorage.removeItem(STORAGE_KEY);
+  applyWorkflowData(normalizeWorkflowData(window.WORKFLOW_DATA || defaultWorkflowData));
+  adminSelectedWorkflowId = workflowDefinitions[0].id;
+  currentWorkflow = workflowDefinitions[0];
+  refreshWorkflowSelect(currentWorkflow.id);
+  refreshSummaryMetrics();
+  renderKnowledge(knowledgeSearch.value);
+  renderStep();
+  renderAdmin();
+  setAdminStatus("Local changes reset.", "ok");
+}
+
+function parseLines(value) {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function parseOptions(value) {
+  return parseLines(value)
+    .map((line) => {
+      const [label, next] = line.split("=>").map((part) => part.trim());
+      if (!label || next === undefined || next === "") return null;
+      const numericNext = Number(next);
+      return { label, next: Number.isNaN(numericNext) ? next : numericNext };
+    })
+    .filter(Boolean);
+}
+
+function formatOptions(options) {
+  return options.map((option) => `${option.label} => ${option.next}`).join("\n");
+}
+
+function setAdminStatus(message, type) {
+  adminStatus.textContent = message;
+  adminStatus.className = type === "error" ? "admin-status-error" : "admin-status-ok";
+}
+
+function init() {
+  refreshWorkflowSelect();
+
+  refreshSummaryMetrics();
 
   document.querySelectorAll(".nav-button").forEach((button) => {
     button.addEventListener("click", () => setView(button.dataset.view));
@@ -801,9 +1160,21 @@ function init() {
     scriptsList.style.display = hidden ? "" : "none";
     event.currentTarget.textContent = hidden ? "Hide Script ^" : "Show Script v";
   });
+  document.querySelector("#newWorkflowButton").addEventListener("click", createNewWorkflow);
+  document.querySelector("#duplicateWorkflowButton").addEventListener("click", duplicateWorkflow);
+  document.querySelector("#deleteWorkflowButton").addEventListener("click", deleteWorkflow);
+  document.querySelector("#addStepButton").addEventListener("click", addAdminStep);
+  document.querySelector("#saveWorkflowButton").addEventListener("click", saveAdminWorkflow);
+  document.querySelector("#exportWorkflowButton").addEventListener("click", exportWorkflowData);
+  document.querySelector("#resetAdminDataButton").addEventListener("click", resetAdminData);
+  document.querySelector("#importWorkflowInput").addEventListener("change", (event) => {
+    importWorkflowData(event.target.files[0]);
+    event.target.value = "";
+  });
   knowledgeSearch.addEventListener("input", (event) => renderKnowledge(event.target.value));
 
   renderKnowledge();
+  renderAdmin();
   setView("workflow");
   renderStep();
 }
@@ -847,4 +1218,8 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value).replaceAll("\n", "&#10;");
 }
