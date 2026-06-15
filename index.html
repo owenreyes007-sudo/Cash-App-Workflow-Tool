@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cash App Advocate Workflow Assistant</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <div class="brand">
+          <div class="brand-mark">$</div>
+          <strong>Cash App</strong>
+        </div>
+
+        <nav class="nav">
+          <button class="nav-button active" data-view="workflow" type="button">⌂ Home</button>
+          <button class="nav-button" data-view="knowledge" type="button">▱ Knowledge Base</button>
+          <button class="nav-button" data-view="dashboard" type="button">◴ Recent Workflows</button>
+          <button class="nav-button" type="button">△ Escalation Matrix</button>
+          <button class="nav-button" type="button">◇ Announcements</button>
+          <button class="nav-button" type="button">▥ Reports & Analytics</button>
+          <button class="nav-button" type="button">⚙ Admin</button>
+        </nav>
+
+        <section class="support-card">
+          <div class="support-icon">◌</div>
+          <h2>Need help?</h2>
+          <p>Contact SME Support</p>
+          <button type="button">Chat with SME</button>
+        </section>
+      </aside>
+
+      <div class="content-shell">
+        <header class="topbar">
+          <div>
+            <h1>Advocate Workflow Assistant</h1>
+            <p>Guided Resolution Tool</p>
+          </div>
+          <div class="top-actions" aria-label="Utility navigation">
+            <button type="button">⌂ Home</button>
+            <button type="button">⌕ Search</button>
+            <button type="button">▱ Bookmarks</button>
+            <button type="button">↺ History</button>
+            <div class="profile">
+              <span>OR</span>
+              <div>
+                <strong>Hello, Owen Reyes</strong>
+                <small>Advocate</small>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main class="main">
+          <section class="view workflow-layout active" id="workflowView" aria-labelledby="stepTitle">
+            <aside class="intake-column">
+              <section class="intake-panel active" id="intakePanel" aria-label="Select an issue">
+                <h2>1. Select an Issue</h2>
+                <p>Choose the scenario that best matches the customer's concern.</p>
+                <label>
+                  Line of Business (LOB)
+                  <select id="lobSelect">
+                    <option>Cash App</option>
+                  </select>
+                </label>
+                <label>
+                  Channel
+                  <select id="channelSelect">
+                    <option>Voice</option>
+                    <option>Messaging</option>
+                    <option>Email</option>
+                  </select>
+                </label>
+                <label>
+                  Issue Category (Call Driver)
+                  <select id="categorySelect">
+                    <option>Account Access</option>
+                    <option>Payments</option>
+                    <option>Cash Card</option>
+                    <option>Account Safety</option>
+                    <option>Identity Verification</option>
+                  </select>
+                </label>
+                <label>
+                  Scenario
+                  <select id="workflowSelect"></select>
+                </label>
+                <label>
+                  Sub-Scenario
+                  <select id="subScenarioSelect">
+                    <option>Incorrect Password / Locked Account</option>
+                    <option>Unable to Verify</option>
+                    <option>Unauthorized Activity</option>
+                    <option>Missing or Misdirected Payment</option>
+                    <option>General Guidance</option>
+                  </select>
+                </label>
+                <button class="primary-action" id="loadWorkflow" type="button">Load Workflow</button>
+              </section>
+
+              <section class="progress-panel" aria-label="Workflow progress">
+                <h2>2. Workflow Progress</h2>
+                <div class="progress-track" id="progressTrack"></div>
+              </section>
+            </aside>
+
+            <section class="workflow-main">
+              <div class="section-title">
+                <h2>3. Guided Workflow</h2>
+                <div class="completion-bar"><span></span></div>
+              </div>
+
+              <section class="step-card" aria-live="polite">
+                <div class="step-count" id="stepMeta">Step 1 of 4: Verify Customer</div>
+                <div class="question-card">
+                  <div class="question-icon">?</div>
+                  <div>
+                    <h3 id="stepTitle">Is the customer able to complete identity verification?</h3>
+                    <p id="stepBody">Choose the correct answer to proceed.</p>
+                  </div>
+                </div>
+                <div class="decision-options" id="decisionOptions"></div>
+              </section>
+
+              <section class="script-panel">
+                <div class="script-header">
+                  <h2>Approved Script / Verbiage</h2>
+                  <button id="toggleScript" type="button">Hide Script ^</button>
+                </div>
+                <div id="scriptsList"></div>
+              </section>
+
+              <section class="outcome-panel">
+                <h2>✓ Outcome</h2>
+                <p id="outcomeText">Customer identity verified successfully. Proceed to the next workflow step.</p>
+                <button class="primary-action" id="nextStepFallback" type="button">Next Step ›</button>
+              </section>
+
+              <div class="footer-actions">
+                <button class="secondary-action" id="resetWorkflow" type="button">↻ Restart Workflow</button>
+                <button class="secondary-action" id="prevStep" type="button">▱ Previous Step</button>
+                <button class="primary-action" type="button">✓ Mark as Resolved</button>
+              </div>
+            </section>
+
+            <aside class="resource-panel" aria-label="Dynamic resources">
+              <section class="resource-card">
+                <div class="resource-heading">
+                  <h2>4. Recommended Action</h2>
+                  <span>Resolution Path</span>
+                </div>
+                <ol id="actionsList"></ol>
+              </section>
+              <section class="resource-card">
+                <h2>▱ Knowledge Base Articles</h2>
+                <ul id="articlesList"></ul>
+                <button class="secondary-action wide" type="button">View More Articles</button>
+              </section>
+              <section class="resource-card escalation">
+                <h2>ⓘ Escalation</h2>
+                <p><strong>Escalate to:</strong> <span id="escalationTarget">Account Security Team</span></p>
+                <p><strong>When:</strong> Customer unable to verify OR repeated failures after reset attempt</p>
+              </section>
+              <section class="resource-card">
+                <h2>ⓘ Reminders</h2>
+                <ul id="toolsList"></ul>
+              </section>
+            </aside>
+          </section>
+
+          <section class="view" id="dashboardView" aria-labelledby="dashboardTitle">
+            <div class="dashboard-header">
+              <p>Phase 1 MVP</p>
+              <h2 id="dashboardTitle">Workflow coverage summary</h2>
+            </div>
+            <div class="metric-grid" aria-label="MVP metrics">
+              <article class="metric"><span>Workflows</span><strong id="workflowCount">0</strong></article>
+              <article class="metric"><span>Knowledge Articles</span><strong id="articleCount">0</strong></article>
+              <article class="metric"><span>Tools & Systems</span><strong id="toolCount">0</strong></article>
+              <article class="metric"><span>Shared Engine</span><strong>PII + IDV</strong></article>
+            </div>
+          </section>
+
+          <section class="view" id="knowledgeView" aria-labelledby="knowledgeTitle">
+            <div class="knowledge-header">
+              <div>
+                <p>Knowledge Hub</p>
+                <h2 id="knowledgeTitle">Approved workflow references</h2>
+              </div>
+              <input class="search" id="knowledgeSearch" type="search" placeholder="Filter articles" />
+            </div>
+            <div class="knowledge-grid" id="knowledgeGrid"></div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
