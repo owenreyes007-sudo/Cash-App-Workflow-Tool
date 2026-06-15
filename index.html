@@ -21,7 +21,7 @@
           <button class="nav-button" type="button">△ Escalation Matrix</button>
           <button class="nav-button" type="button">◇ Announcements</button>
           <button class="nav-button" type="button">▥ Reports & Analytics</button>
-          <button class="nav-button" type="button">⚙ Admin</button>
+          <button class="nav-button" data-view="admin" type="button">⚙ Admin</button>
         </nav>
 
         <section class="support-card">
@@ -193,10 +193,75 @@
             </div>
             <div class="knowledge-grid" id="knowledgeGrid"></div>
           </section>
+
+          <section class="view admin-view" id="adminView" aria-labelledby="adminTitle">
+            <div class="admin-header">
+              <div>
+                <p>Admin Console</p>
+                <h2 id="adminTitle">Workflow Management</h2>
+              </div>
+              <div class="admin-actions">
+                <button class="secondary-action" id="newWorkflowButton" type="button">+ New Workflow</button>
+                <button class="secondary-action" id="duplicateWorkflowButton" type="button">Duplicate</button>
+                <button class="danger-action" id="deleteWorkflowButton" type="button">Delete</button>
+                <button class="secondary-action" id="exportWorkflowButton" type="button">Export JSON</button>
+                <label class="import-button">
+                  Import JSON
+                  <input id="importWorkflowInput" type="file" accept="application/json,.json" />
+                </label>
+              </div>
+            </div>
+
+            <div class="admin-layout">
+              <aside class="admin-list-panel">
+                <h3>Workflows</h3>
+                <div id="adminWorkflowList"></div>
+              </aside>
+
+              <section class="admin-editor">
+                <div class="editor-grid">
+                  <label>
+                    Workflow ID
+                    <input id="adminWorkflowId" type="text" placeholder="accountAccess" />
+                  </label>
+                  <label>
+                    Category
+                    <input id="adminWorkflowCategory" type="text" placeholder="Account Access" />
+                  </label>
+                  <label>
+                    Title
+                    <input id="adminWorkflowTitle" type="text" placeholder="Account Access Recovery" />
+                  </label>
+                  <label>
+                    Purpose
+                    <input id="adminWorkflowPurpose" type="text" placeholder="Assist customers who cannot access their account." />
+                  </label>
+                </div>
+
+                <label>
+                  Knowledge Articles
+                  <textarea id="adminWorkflowArticles" rows="3" placeholder="One article title per line"></textarea>
+                </label>
+
+                <div class="step-admin-header">
+                  <h3>Workflow Steps</h3>
+                  <button class="secondary-action" id="addStepButton" type="button">+ Add Step</button>
+                </div>
+                <div id="adminSteps"></div>
+
+                <div class="admin-save-row">
+                  <button class="primary-action" id="saveWorkflowButton" type="button">Save Workflow</button>
+                  <button class="secondary-action" id="resetAdminDataButton" type="button">Reset Local Changes</button>
+                  <span id="adminStatus" role="status"></span>
+                </div>
+              </section>
+            </div>
+          </section>
         </main>
       </div>
     </div>
 
+    <script src="data/workflow-data.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
