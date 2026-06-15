@@ -261,7 +261,9 @@ label {
 }
 
 select,
-.search {
+.search,
+.admin-editor input,
+.admin-editor textarea {
   width: 100%;
   min-height: 42px;
   padding: 0 12px;
@@ -272,8 +274,16 @@ select,
   font-size: 12px;
 }
 
+.admin-editor textarea {
+  min-height: 84px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
 .primary-action,
-.secondary-action {
+.secondary-action,
+.danger-action,
+.import-button {
   min-height: 40px;
   padding: 0 16px;
   border-radius: 6px;
@@ -291,6 +301,24 @@ select,
   border: 1px solid var(--green);
   background: #fff;
   color: var(--green-2);
+}
+
+.danger-action {
+  border: 1px solid var(--red);
+  background: #fff;
+  color: var(--red);
+}
+
+.import-button {
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--green);
+  background: #fff;
+  color: var(--green-2);
+}
+
+.import-button input {
+  display: none;
 }
 
 .wide {
@@ -599,7 +627,8 @@ select,
 }
 
 .dashboard-header,
-.knowledge-header {
+.knowledge-header,
+.admin-header {
   display: flex;
   justify-content: space-between;
   gap: 20px;
@@ -607,7 +636,8 @@ select,
 }
 
 .dashboard-header p,
-.knowledge-header p {
+.knowledge-header p,
+.admin-header p {
   margin: 0 0 4px;
   color: var(--green-2);
   font-size: 12px;
@@ -615,7 +645,8 @@ select,
 }
 
 .dashboard-header h2,
-.knowledge-header h2 {
+.knowledge-header h2,
+.admin-header h2 {
   margin: 0;
   font-size: 28px;
 }
@@ -676,6 +707,145 @@ select,
   font-weight: 800;
 }
 
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 18px;
+  padding: 0 24px 24px;
+}
+
+.admin-list-panel,
+.admin-editor {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.admin-list-panel {
+  padding: 16px;
+}
+
+.admin-list-panel h3,
+.step-admin-header h3 {
+  margin: 0 0 12px;
+  color: var(--green-2);
+}
+
+#adminWorkflowList {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-workflow-item {
+  width: 100%;
+  min-height: 48px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+}
+
+.admin-workflow-item.active {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.admin-workflow-item strong,
+.admin-workflow-item span {
+  display: block;
+}
+
+.admin-workflow-item strong {
+  font-size: 13px;
+}
+
+.admin-workflow-item span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.admin-editor {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.step-admin-header,
+.admin-save-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+#adminSteps {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-step-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfffc;
+}
+
+.admin-step-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-step-title strong {
+  color: var(--green-2);
+}
+
+.admin-step-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-step-card label {
+  color: var(--ink);
+}
+
+.admin-step-card textarea {
+  min-height: 72px;
+}
+
+.admin-status-ok {
+  color: var(--green-2);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-status-error {
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 @media (max-width: 1280px) {
   .app-shell,
   .workflow-layout.active {
@@ -701,7 +871,11 @@ select,
   .topbar,
   .top-actions,
   .outcome-panel,
-  .footer-actions {
+  .footer-actions,
+  .admin-header,
+  .admin-actions,
+  .step-admin-header,
+  .admin-save-row {
     display: grid;
   }
 
@@ -711,7 +885,10 @@ select,
 
   .decision-options,
   .metric-grid,
-  .knowledge-grid {
+  .knowledge-grid,
+  .admin-layout,
+  .editor-grid,
+  .admin-step-grid {
     grid-template-columns: 1fr;
   }
 
